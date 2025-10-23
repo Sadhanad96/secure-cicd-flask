@@ -12,120 +12,142 @@
       padding: 0;
       background: linear-gradient(135deg, #6e8efb, #a777e3);
       color: #333;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
     }
     .container {
-      width: 95%;
       max-width: 800px;
+      margin: 80px auto;
       background: #fff;
-      border-radius: 20px;
-      box-shadow: 0 12px 30px rgba(0,0,0,0.25);
-      padding: 50px 40px;
+      border-radius: 15px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+      padding: 50px;
       text-align: center;
       transition: all 0.3s ease;
     }
     h1 {
       color: #4b00ff;
-      margin-bottom: 40px;
-      font-size: 2rem;
+      margin-bottom: 30px;
     }
     input[type="file"] {
       display: none;
     }
     .upload-label {
       display: inline-block;
-      padding: 18px 30px;
+      padding: 15px 25px;
       background: #ff6b81;
       color: white;
       font-weight: 600;
-      border-radius: 12px;
+      border-radius: 10px;
       cursor: pointer;
-      font-size: 1rem;
       transition: background 0.3s ease;
     }
     .upload-label:hover {
       background: #ff4757;
     }
     button {
-      margin-top: 25px;
-      padding: 15px 30px;
+      margin-top: 20px;
+      padding: 12px 25px;
       background: #1e90ff;
       border: none;
-      border-radius: 12px;
+      border-radius: 10px;
       color: white;
       font-weight: 600;
-      font-size: 1rem;
       cursor: pointer;
       transition: background 0.3s ease;
     }
     button:hover {
       background: #3742fa;
     }
-    #uploaded-file {
-      margin-top: 25px;
+    .uploaded-file {
+      margin-top: 20px;
       font-weight: 600;
       color: #333;
-      font-size: 1rem;
     }
-    .results {
-      margin-top: 40px;
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #ccc;
       text-align: left;
     }
-    .result-box {
-      padding: 20px;
-      border-radius: 12px;
-      margin-bottom: 25px;
-      white-space: pre-wrap;
-      font-family: monospace;
+    th {
+      background: #f0f0f0;
     }
-    .flake8 { background: #fff4e5; color: #ff7f00; border-left: 6px solid #ff7f00; }
-    .bandit { background: #ffe5e5; color: #e74c3c; border-left: 6px solid #e74c3c; }
+    .severity-High { background: #ffcccc; }
+    .severity-Medium { background: #ffe5b4; }
+    .severity-Low { background: #ffffcc; }
+
     .toggle-btn {
       cursor: pointer;
       color: #1e90ff;
       font-weight: 600;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
       display: inline-block;
-      font-size: 1rem;
     }
     .hidden { display: none; }
+
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Secure CI/CD Static Analysis</h1>
+
     <form action="/" method="post" enctype="multipart/form-data">
       <label class="upload-label" for="file">📂 Upload Python File</label>
       <input type="file" name="file" id="file">
+      <div id="uploaded-file" class="uploaded-file"></div>
       <br>
       <button type="submit">Scan File</button>
-      <div id="uploaded-file">
-        {% if uploaded_filename %}
-          📄 Uploaded File: <span style="color:#1e90ff">{{ uploaded_filename }}</span>
-        {% endif %}
-      </div>
     </form>
 
-    {% if flake8_output or bandit_output %}
+    {% if flake8_lines %}
     <div class="results">
       <div class="toggle-btn" onclick="toggle('flake8')">🔶 Flake8 Output</div>
-      <div id="flake8" class="result-box flake8 {% if not flake8_output %}hidden{% endif %}">
-        {{ flake8_output | safe }}
-      </div>
+      <table id="flake8" class="{% if not flake8_lines %}hidden{% endif %}">
+        <tr>
+          <th>Line</th>
+          <th>Type</th>
+          <th>Message</th>
+        </tr>
+        {% for f in flake8_lines %}
+        <tr>
+          <td>{{ f.line }}</td>
+          <td>{{ f.type }}</td>
+          <td>{{ f.message }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+    {% endif %}
 
+    {% if bandit_issues %}
+    <div class="results">
       <div class="toggle-btn" onclick="toggle('bandit')">🔴 Bandit Output</div>
-      <div id="bandit" class="result-box bandit {% if not bandit_output %}hidden{% endif %}">
-        {{ bandit_output | safe }}
-      </div>
+      <table id="bandit" class="{% if not bandit_issues %}hidden{% endif %}">
+        <tr>
+          <th>Line</th>
+          <th>Code</th>
+          <th>Severity</th>
+          <th>Description</th>
+        </tr>
+        {% for b in bandit_issues %}
+        <tr class="severity-{{ b.severity }}">
+          <td>{{ b.line }}</td>
+          <td>{{ b.code }}</td>
+          <td>{{ b.severity }}</td>
+          <td>{{ b.desc }}</td>
+        </tr>
+        {% endfor %}
+      </table>
     </div>
     {% endif %}
   </div>
 
   <script>
-    // Show uploaded filename immediately
+    // Show uploaded filename instantly
     const fileInput = document.getElementById('file');
     const uploadedDiv = document.getElementById('uploaded-file');
     fileInput.addEventListener('change', () => {
@@ -136,7 +158,7 @@
       }
     });
 
-    // Toggle result boxes
+    // Toggle tables
     function toggle(id) {
       const el = document.getElementById(id);
       if (el.classList.contains('hidden')) {
