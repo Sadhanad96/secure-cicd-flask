@@ -7,6 +7,7 @@ app = Flask(__name__)
 UPLOAD_FOLDER = os.path.join(os.getcwd(), "uploads")
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+
 def parse_flake8(output):
     lines = []
     for line in output.splitlines():
@@ -19,6 +20,7 @@ def parse_flake8(output):
                 "message": match.group(3)
             })
     return lines
+
 
 def parse_bandit(output):
     issues = []
@@ -36,6 +38,7 @@ def parse_bandit(output):
                 "desc": desc_match.group(1).strip() if desc_match else ""
             })
     return issues
+
 
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -64,6 +67,7 @@ def index():
         flake8_lines=flake8_lines,
         bandit_issues=bandit_issues
     )
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5050, debug=True)
